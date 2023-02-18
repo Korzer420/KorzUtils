@@ -1,6 +1,6 @@
 namespace KorzUtils.Helper;
 
-internal enum LogType
+public enum LogType
 {
     Normal,
 
@@ -13,7 +13,10 @@ internal enum LogType
     Fine
 }
 
-internal static class LogHelper
+/// <summary>
+/// Provides useful functions regarding logging.
+/// </summary>
+public static class LogHelper
 {
     internal static void Write(string message, LogType logType = LogType.Normal)
     => Write(null, message, logType);
