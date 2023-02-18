@@ -3,7 +3,7 @@ namespace KorzUtils.Data;
 /// <summary>
 /// Contains data for a hook which executes if the text matches (like in the player data functions or language get)
 /// </summary>
-public class MatchHookData
+internal class MatchHookData
 {
     #region Properties
 
