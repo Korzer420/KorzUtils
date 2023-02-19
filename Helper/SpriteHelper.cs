@@ -19,7 +19,7 @@ public static class SpriteHelper
     public static Sprite CreateSprite<T>(string spriteName, string extension = ".png") where T : Mod
     {
         string modName = typeof(T).Name;
-        string fullFileName = modName + spriteName + extension;
+        string fullFileName = $"{modName}.{spriteName +extension}";
         if (!_cachedSprites.ContainsKey(fullFileName))
         {
             // Don't ask...
