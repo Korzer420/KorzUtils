@@ -1,5 +1,5 @@
+using Modding;
 using System.IO;
-using System.Reflection;
 
 namespace KorzUtils.Helper;
 
@@ -14,12 +14,11 @@ public static class ResourceHelper
     /// Loads a file from the resource path.
     /// <para>Make sure to dispose the stream afterwards!</para>
     /// </summary>
-    /// <param name="assembly">The assembly in which the resource file is placed.</param>
-    /// <param name="modName">The name of the mod.</param>
-    /// <param name="fileName">The name (and additional path) of the file. Format is: <paramref name="modName"/>.Resource.<paramref name="fileName"/></param>
+    /// <param name="fileName">The name (and additional path) of the file. Starts in the resource folder. Format is [ModName].Resources.fileName<paramref name="fileName"/>
+    /// <para>Use "." to seperate directories instead of "/"</para>.</param>
     /// <returns></returns>
-    public static Stream LoadResource(Assembly assembly, string modName, string fileName)
-    => assembly.GetManifestResourceStream($"{modName}.Resources.{fileName}");
+    public static Stream LoadResource<T>(string fileName) where T : Mod
+    => typeof(T).Assembly.GetManifestResourceStream($"{typeof(T).Name}.Resources.{fileName}");
     
 
     #endregion

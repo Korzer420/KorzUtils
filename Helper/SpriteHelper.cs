@@ -1,3 +1,4 @@
+using Modding;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -13,27 +14,24 @@ public static class SpriteHelper
     private static Dictionary<string, Sprite> _cachedSprites = new();
 
     /// <summary>
-    /// Creates a sprite from the given image path. Starts in the resource folder.
+    /// Creates a sprite from the given image path. Starts in the Resource folder.
     /// </summary>
-    public static Sprite CreateSprite(Assembly assembly, string modName, string spriteName) => CreateSprite(assembly, modName, spriteName, ".png");
-
-    /// <summary>
-    /// Creates a sprite from the given image path. Starts in this Resource folder.
-    /// </summary>
-    public static Sprite CreateSprite(Assembly assembly, string modName, string spriteName, string extension)
+    public static Sprite CreateSprite<T>(string spriteName, string extension = ".png") where T : Mod
     {
-        if (!_cachedSprites.ContainsKey($"{modName}{spriteName}"))
+        string modName = typeof(T).Name;
+        string fullFileName = modName + spriteName + extension;
+        if (!_cachedSprites.ContainsKey(fullFileName))
         {
             // Don't ask...
-            using Stream stream = ResourceHelper.LoadResource(assembly,modName,$"{spriteName + extension}");
+            using Stream stream = ResourceHelper.LoadResource<T>(fullFileName);
             using MemoryStream ms = new();
             stream.CopyTo(ms);
             byte[] imageData = ms.ToArray();
             Texture2D tex = new(1, 1, TextureFormat.RGBA32, false);
             ImageConversion.LoadImage(tex, imageData, true);
             tex.filterMode = FilterMode.Bilinear;
-            _cachedSprites.Add($"{modName}{spriteName}", Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(.5f, .5f)));
+            _cachedSprites.Add(fullFileName, Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(.5f, .5f)));
         }
-        return _cachedSprites[$"{modName}{spriteName}"];
+        return _cachedSprites[fullFileName];
     }
 }

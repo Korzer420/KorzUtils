@@ -1,4 +1,6 @@
 using KorzUtils.Enums;
+using Modding;
+using System;
 
 namespace KorzUtils.Helper;
 
@@ -7,14 +9,22 @@ namespace KorzUtils.Helper;
 /// </summary>
 public static class LogHelper
 {
-    public static void Write(string message, LogType logType = LogType.Normal)
-    => Write(null, message, logType);
-
-    public static void Write(string mod, string message, LogType logType = LogType.Normal)
+    /// <summary>
+    /// Creates a log entry in the modlog.
+    /// </summary>
+    /// <typeparam name="T">The mod which name should be included in the log.</typeparam>
+    /// <param name="message">The message that should be written.</param>
+    /// <param name="logType">The type of log message</param>
+    /// <param name="timeStamp">If <see langword="true"/> the current date time is included.</param>
+    /// <param name="includeScene">If <see langword="true"/>, the current scene is prepended.</param>
+    public static void Write<T>(string message, LogType logType = LogType.Normal, bool timeStamp = true, bool includeScene = true) where T : Mod
     {
-        message = $"(At {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}) {message}";
-        if (!string.IsNullOrEmpty(mod))
-            message = "{From " + mod + "}" + message;
+        if (includeScene)
+            message = $"(In scene: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}) " + message;
+        if (timeStamp)
+            message = $"(At {DateTime.Now}) " + message;
+
+        message = $"From mod: {typeof(T).Name} -> " + message;
         switch (logType)
         {
             case LogType.Normal:
