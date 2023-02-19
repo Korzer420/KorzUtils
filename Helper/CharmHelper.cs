@@ -318,7 +318,6 @@ public static class CharmHelper
         CharmRef.Grimmchild2 or CharmRef.Grimmchild3 
         or CharmRef.Grimmchild4 or CharmRef.CarefreeMelody => CharmRef.Grimmchild1,
         _ => charm
-
     };
 
     #endregion
