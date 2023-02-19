@@ -48,7 +48,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (SetString hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (SetString hook): " + exception.ToString());
                 }
         return orig;
     }
@@ -64,7 +64,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (SetInt hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (SetInt hook): " + exception.ToString());
                 }
         return orig;
     }
@@ -80,7 +80,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (SetBool hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (SetBool hook): " + exception.ToString());
                 }
         return orig;
     }
@@ -96,7 +96,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (GetString hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (GetString hook): " + exception.ToString());
                 }
         return orig;
     }
@@ -112,7 +112,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (GetInt hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (GetInt hook): " + exception.ToString());
                 }
         return orig;
     }
@@ -128,7 +128,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (GetBool hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (GetBool hook): " + exception.ToString());
                 }
         return orig;
     }
@@ -145,7 +145,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (language get hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (language get hook): " + exception.ToString());
                 }
         return orig;
     }
@@ -162,7 +162,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (Fsm before enable hook): " + exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (Fsm before enable hook): " + exception.ToString());
                 }
         orig(self);
         if (_hooks.ContainsKey(Hook.AfterEnableFsm) && _hooks[Hook.AfterEnableFsm].Any())
@@ -175,7 +175,7 @@ public static class HookHelper
                 }
                 catch (Exception exception)
                 {
-                    LogHelper.Write("An error occured while trying to execute hook " + item.Name + " (Fsm after enable hook): "+exception.ToString());
+                    LogHelper.Write<KorzUtils>("An error occured while trying to execute hook " + item.Name + " (Fsm after enable hook): "+exception.ToString());
                 }
     }
 

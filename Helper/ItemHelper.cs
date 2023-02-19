@@ -2,7 +2,7 @@ using ItemChanger;
 using ItemChanger.Util;
 using UnityEngine;
 
-namespace BomberKnight.Helper;
+namespace KorzUtils.Helper;
 
 /// <summary>
 /// Provides functions regarding item changer items. (Requires ItemChanger)

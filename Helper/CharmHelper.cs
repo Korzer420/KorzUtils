@@ -1,10 +1,9 @@
 using KorzUtils.Enums;
-using KorzUtils.Helper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BomberKnight.Helper;
+namespace KorzUtils.Helper;
 
 /// <summary>
 /// Offers various functions regarding charms.
@@ -187,7 +186,7 @@ public static class CharmHelper
         if (!Enum.TryParse(charmName, out CharmRef charm))
         {
             if (!_customCharmList.ContainsKey(charmName))
-                LogHelper.Write("Tried equipping unknown charm " + charmName, LogType.Error);
+                LogHelper.Write<KorzUtils>("Tried equipping unknown charm " + charmName, LogType.Error);
             else
             {
                 if (PlayerData.instance.GetBool($"equippedCharm_{_customCharmList[charmName]}"))
@@ -233,7 +232,7 @@ public static class CharmHelper
         if (!Enum.TryParse(charmName, out CharmRef charm))
         {
             if (!_customCharmList.ContainsKey(charmName))
-                LogHelper.Write("Tried unequipping unknown charm " + charmName, LogType.Error);
+                LogHelper.Write<KorzUtils>("Tried unequipping unknown charm " + charmName, LogType.Error);
             else
             {
                 if (!PlayerData.instance.GetBool($"equippedCharm_{_customCharmList[charmName]}") && !toggle)
@@ -267,7 +266,7 @@ public static class CharmHelper
             return PlayerData.instance.GetInt($"charmCost_{_customCharmList[charmName]}");
         else
         {
-            LogHelper.Write("Tried fetching the cost of unknown charm: " + charmName, LogType.Error);
+            LogHelper.Write<KorzUtils>("Tried fetching the cost of unknown charm: " + charmName, LogType.Error);
             return -1;
         }    
     }
@@ -298,7 +297,7 @@ public static class CharmHelper
             HeroController.instance.CharmUpdate();
         }
         else
-            LogHelper.Write("Tried setting the cost of unknown charm: " + charmName, LogType.Error);
+            LogHelper.Write<KorzUtils>("Tried setting the cost of unknown charm: " + charmName, LogType.Error);
     }
 
     #endregion

@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 
-namespace BomberKnight.Helper;
+namespace KorzUtils.Helper;
 
 /// <summary>
 /// Provides function for fsm.
