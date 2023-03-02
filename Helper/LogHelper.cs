@@ -24,23 +24,23 @@ public static class LogHelper
         if (timeStamp)
             message = $"(At {DateTime.Now}) " + message;
 
-        message = $"From mod: {typeof(T).Name} -> " + message;
+        message = $"[{typeof(T).Name}]" + message;
         switch (logType)
         {
             case LogType.Normal:
-                KorzUtils.Instance.Log(message);
+                Logger.Log(message);
                 break;
             case LogType.Warning:
-                KorzUtils.Instance.LogWarn(message);
+                Logger.LogWarn(message);
                 break;
             case LogType.Error:
-                KorzUtils.Instance.LogError(message);
+                Logger.LogError(message);
                 break;
             case LogType.Debug:
-                KorzUtils.Instance.LogDebug(message);
+                Logger.LogDebug(message);
                 break;
             default:
-                KorzUtils.Instance.LogFine(message);
+                Logger.LogFine(message);
                 break;
         }
     }

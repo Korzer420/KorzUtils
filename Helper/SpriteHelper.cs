@@ -1,7 +1,6 @@
 using Modding;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using UnityEngine;
 
 namespace KorzUtils.Helper;
@@ -19,11 +18,11 @@ public static class SpriteHelper
     public static Sprite CreateSprite<T>(string spriteName, string extension = ".png") where T : Mod
     {
         string modName = typeof(T).Name;
-        string fullFileName = $"{modName}.{spriteName +extension}";
+        string fullFileName = $"{modName}.{spriteName + extension}";
         if (!_cachedSprites.ContainsKey(fullFileName))
         {
             // Don't ask...
-            using Stream stream = ResourceHelper.LoadResource<T>(fullFileName);
+            using Stream stream = ResourceHelper.LoadResource<T>(spriteName + extension);
             using MemoryStream ms = new();
             stream.CopyTo(ms);
             byte[] imageData = ms.ToArray();

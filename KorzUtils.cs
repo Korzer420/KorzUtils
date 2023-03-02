@@ -6,10 +6,7 @@ public class KorzUtils : Mod
 {
     #region Constructors
 
-    public KorzUtils()
-    {
-        Instance = this;
-    }
+    public KorzUtils() => Instance = this;
     
     #endregion
 
@@ -17,10 +14,7 @@ public class KorzUtils : Mod
 
     public static KorzUtils Instance { get; set; }
 
-    #endregion
+    public override string GetVersion() => "0.2.0.0";
 
-    public override string GetVersion()
-    {
-        return base.GetVersion();
-    }
+    #endregion
 }

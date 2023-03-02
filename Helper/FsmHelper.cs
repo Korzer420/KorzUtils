@@ -43,5 +43,6 @@ public static class FsmHelper
             throw new Exception($"Couldn't find transition {transitionName} in state {state.Name}");
         FsmState destination = state.Fsm.States.FirstOrDefault(x => string.Equals(x.Name, newState));
         transition.ToFsmState = destination ?? throw new Exception("Couldn't find destination state.");
+        transition.ToState = destination?.Name;
     }
 }

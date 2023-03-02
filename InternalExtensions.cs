@@ -1,13 +1,7 @@
-using KorzUtils.Data;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace KorzUtils;
 
 internal static class InternalExtensions
 {
-    internal static void SortByPriority(this List<MatchHookData> list) => list = list.OrderBy(x => x.Priority).ToList();
-
     internal static bool Match(this string callValue, string comparision, bool caseSensitive = false)
     {
         if (!caseSensitive)
