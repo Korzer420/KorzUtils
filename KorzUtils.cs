@@ -14,7 +14,7 @@ public class KorzUtils : Mod
 
     public static KorzUtils Instance { get; set; }
 
-    public override string GetVersion() => "0.2.0.0";
+    public override string GetVersion() => "0.3.0.0";
 
     #endregion
 }
