@@ -1,5 +1,6 @@
 using KorzUtils.Enums;
 using Modding;
+using System;
 
 namespace KorzUtils.Helper;
 
@@ -40,4 +41,15 @@ public static class LogHelper
                 break;
         }
     }
+
+    /// <summary>
+    /// Creates a log error entry in the modlog.
+    /// </summary>
+    /// <typeparam name="T">The mod which name should be included in the log.</typeparam>
+    /// <param name="message">The message that should be written.</param>
+    /// <param name="error">The error that should be thrown</param>
+    /// <param name="includeScene">If <see langword="true"/>, the current scene is prepended.</param>
+    public static void Write<T>(string message, Exception error, bool includeScene = true) where T : Mod
+     => Write<T>(message + error.ToString(), LogType.Error, includeScene);
+
 }

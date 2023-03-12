@@ -14,11 +14,12 @@ public static class SpriteHelper
 
     /// <summary>
     /// Creates a sprite from the given image path. Starts in the Resource folder.
+    /// <para>All "/" and "\" will be replaced with "."</para>
     /// </summary>
     public static Sprite CreateSprite<T>(string spriteName, string extension = ".png") where T : Mod
     {
         string modName = typeof(T).Name;
-        string fullFileName = $"{modName}.{spriteName + extension}";
+        string fullFileName = $"{modName}.{spriteName.Replace("/", ".").Replace("\\", ".") + extension}";
         if (!_cachedSprites.ContainsKey(fullFileName))
         {
             // Don't ask...
