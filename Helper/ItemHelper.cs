@@ -6,8 +6,8 @@ using UnityEngine;
 namespace KorzUtils.Helper;
 
 /// <summary>
-/// Provides functions regarding item changer items. (Requires ItemChanger)
-/// <para>ItemChanger is not a dependency of this mod, keep that in mind.</para>
+/// Provides functions regarding item changer items.
+/// <para>ItemChanger is not a dependency of this mod but required to use this, keep that in mind.</para>
 /// </summary>
 public static class ItemHelper
 {

@@ -1,6 +1,9 @@
 using HutongGames.PlayMaker;
-using KorzUtils;
+using HutongGames.PlayMaker.Actions;
+using ItemChanger.Extensions;
+using KorzUtils.Data;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
@@ -11,6 +14,8 @@ namespace KorzUtils.Helper;
 /// </summary>
 public static class FsmHelper
 {
+    #region FsmAction
+
     /// <summary>
     /// Check if the passed action is in the correct context for modifications. Leave unneeded values null.
     /// </summary>
@@ -18,7 +23,6 @@ public static class FsmHelper
     /// <param name="gameObjectName">The name of the gameobject on which the fsm of this action is attached.</param>
     /// <param name="stateName">The name of the state in which this action should be.</param>
     /// <param name="action">The action for the comparison.</param>
-    /// <returns></returns>
     public static bool IsCorrectContext(this FsmStateAction action, string fsmName, string gameObjectName, string stateName)
     {
         if (!string.IsNullOrEmpty(fsmName) && !action.Fsm.Name.Match(fsmName))
@@ -30,12 +34,175 @@ public static class FsmHelper
         return true;
     }
 
+    #endregion
+
+    #region FsmState
+
+    #region GetActions
+
+    public static FsmStateAction GetFirstAction(this FsmState state) => state.Actions?.FirstOrDefault();
+
+    public static T GetFirstAction<T>(this FsmState state) where T : FsmStateAction 
+        => state.Actions.FirstOrDefault(x => x is T) as T;
+
+    public static FsmStateAction GetLastAction(this FsmState state) => state.Actions?.LastOrDefault();
+
+    public static T GetLastAction<T>(this FsmState state) where T : FsmStateAction
+        => state.Actions?.LastOrDefault(x => x is T) as T;
+
+    public static FsmStateAction[] GetActions(this FsmState state) => state.Actions;
+
+    public static T[] GetActions<T>(this FsmState state) where T: FsmStateAction => state.Actions?.Where(x => x is T)?
+        .Select(x => x as T)?
+        .ToArray();
+
+    #endregion
+
+    #region AddActions
+
+    /// <summary>
+    /// Adds actions to a fsm state.
+    /// </summary>
+    public static void AddActions(this FsmState state, params FsmStateAction[] actions)
+    {
+        if (!actions.Any())
+            return;
+        FsmStateAction[] newActions = state.Actions.Concat(actions).ToArray();
+        state.Actions = newActions;
+    }
+
+    /// <summary>
+    /// Adds actions to a fsm state.
+    /// </summary>
+    public static void AddActions(this FsmState state, IEnumerable<FsmStateAction> actions)
+    {
+        if (!actions.Any())
+            return;
+        FsmStateAction[] newActions = state.Actions.Concat(actions).ToArray();
+        state.Actions = newActions;
+    }
+
+    /// <summary>
+    /// Adds actions to a fsm state.
+    /// </summary>
+    public static void AddActions(this FsmState state, params Action[] actions)
+    {
+        if (!actions.Any())
+            return;
+        FsmStateAction[] newActions = state.Actions.Concat(actions.Select(x => new GenericFsmStateAction() { ToExecute = x })).ToArray();
+        state.Actions = newActions;
+    }
+
+    /// <summary>
+    /// Adds actions to a fsm state.
+    /// </summary>
+    public static void AddActions(this FsmState state, IEnumerable<Action> actions)
+    {
+        if (!actions.Any())
+            return;
+        FsmStateAction[] newActions = state.Actions.Concat(actions.Select(x => new GenericFsmStateAction() { ToExecute = x })).ToArray();
+        state.Actions = newActions;
+    }
+
+    #endregion
+
+    #region RemoveActions
+
+    /// <summary>
+    /// Removes all actions from a state.
+    /// </summary>
+    public static void RemoveAllActions(this FsmState state)
+        => state.Actions = Array.Empty<FsmStateAction>();
+
+    /// <summary>
+    /// Removes all actions of the passed type.
+    /// </summary>
+    /// <typeparam name="T">The type of actions that should be removed.</typeparam>
+    public static void RemoveActions<T>(this FsmState state) where T : FsmStateAction
+    {
+        FsmStateAction[] remainingActions = state.Actions.Where(x => x is not T).ToArray();
+        state.Actions = remainingActions;
+    }
+
+    /// <summary>
+    /// Removes the first appearance of an action
+    /// </summary>
+    /// <typeparam name="T">The type of actions that should be removed.</typeparam>
+    public static void RemoveFirstAction<T>(this FsmState state) where T : FsmStateAction
+        => state.RemoveActions<T>(0);
+
+    /// <summary>
+    /// Removes the last appearance of an action
+    /// </summary>
+    /// <typeparam name="T">The type of actions that should be removed.</typeparam>
+    public static void RemoveLastAction<T>(this FsmState state) where T : FsmStateAction
+        => state.RemoveActions<T>(state.GetActions<T>().Length - 1);
+
+    /// <summary>
+    /// Removes all appearances of an action that appear in the passed list.
+    /// </summary>
+    /// <typeparam name="T">The type of actions that should be removed.</typeparam>
+    /// <param name="indexToRemove">The indexes of the ACTION TYPE that should be removed. 
+    /// This does not have to match the actual index of the actions in the state!</param>
+    public static void RemoveActions<T>(this FsmState state, params int[] indexToRemove) where T : FsmStateAction
+    {
+        if (indexToRemove?.Any() != true || state.GetActions<T>().Length == 0)
+            return;
+        List<FsmStateAction> remainingActions = new();
+
+        int currentActionTypeIndex = 0;
+        foreach (FsmStateAction currentAction in state.Actions)
+        {
+            if (currentAction is T)
+            {
+                currentActionTypeIndex++;
+                if (indexToRemove.Contains(currentActionTypeIndex))
+                    continue;
+            }
+            remainingActions.Add(currentAction);
+        }
+        state.Actions = remainingActions.ToArray();
+    }
+
+    #endregion
+
+    #region Transition
+
+    /// <summary>
+    /// Adds a transition to a state. If the event doesn't exist already in the fsm, it will be added.
+    /// If the state already has the transition, it will be adjusted.
+    /// </summary>
+    public static void AddTransition(this FsmState state, string eventName, string targetStateName)
+    {
+        if (string.IsNullOrEmpty(eventName))
+            throw new ArgumentNullException(nameof(eventName));
+        if (string.IsNullOrEmpty(targetStateName))
+            throw new ArgumentNullException(nameof(targetStateName));
+        FsmState targetState = state.Fsm.States.FirstOrDefault(x => x.Name == targetStateName);
+        if (targetState == null)
+            throw new ArgumentNullException($"Couldn't find state '{targetStateName}' in fsm");
+        if (state.Transitions.Any(x => x.EventName == eventName))
+        {
+            state.AdjustTransition(eventName, targetStateName);
+            return;
+        }
+
+        state.Fsm.AddEvent(eventName);
+        FsmTransition fsmTransition = new()
+        {
+            FsmEvent = state.Fsm.Events.FirstOrDefault(x => x.Name == eventName),
+            ToState = targetStateName,
+            ToFsmState = targetState
+        };
+        FsmTransition[] transitions = new FsmTransition[state.Transitions.Length + 1];
+        state.Transitions.CopyTo(transitions, 0);
+        transitions[transitions.Length - 1] = fsmTransition;
+        state.Transitions = transitions;
+    }
+
     /// <summary>
     /// Move a transition from one state to another.
     /// </summary>
-    /// <param name="state"></param>
-    /// <param name="transitionName"></param>
-    /// <param name="newState"></param>
     public static void AdjustTransition(this FsmState state, string transitionName, string newState)
     {
         FsmTransition transition = state.Transitions.FirstOrDefault(x => string.Equals(x.FsmEvent.Name, transitionName));
@@ -45,4 +212,245 @@ public static class FsmHelper
         transition.ToFsmState = destination ?? throw new Exception("Couldn't find destination state.");
         transition.ToState = destination?.Name;
     }
+
+    /// <summary>
+    /// Move transitions from one state to another.
+    /// </summary>
+    public static void AdjustTransition(this FsmState state, IEnumerable<FsmTransitionData> transitionData)
+    {
+        if (transitionData == null)
+            throw new ArgumentNullException(nameof(transitionData));
+        foreach (FsmTransitionData transitionRequest in transitionData)
+            state.AdjustTransition(transitionRequest.EventName, transitionRequest.TargetState);
+    }
+
+    /// <summary>
+    /// Move transitions from one state to another.
+    /// </summary>
+    public static void AdjustTransition(this FsmState state, params FsmTransitionData[] transitionData)
+    {
+        if (transitionData == null)
+            throw new ArgumentNullException(nameof(transitionData));
+        foreach (FsmTransitionData transitionRequest in transitionData)
+            state.AdjustTransition(transitionRequest.EventName, transitionRequest.TargetState);
+    }
+
+    /// <summary>
+    /// Adjust every transition from the current state to the target state.
+    /// </summary>
+    public static void AdjustTransitions(this FsmState state, string targetStateName)
+    {
+        foreach (FsmTransition transition in state.Transitions)
+            state.AdjustTransition(transition.EventName, targetStateName);
+    }
+
+    /// <summary>
+    /// Remove all transitions from a state.
+    /// </summary>
+    public static void ClearTransitions(this FsmState state) => state.Transitions = Array.Empty<FsmTransition>();
+    
+    #endregion
+
+    #endregion
+
+    #region PlayMakerFSM
+
+    /// <summary>
+    /// Gets a state present in a fsm or <see langword="null"/> if it doesn't exist.
+    /// </summary>
+    public static FsmState GetState(this PlayMakerFSM fsm, string stateName) => GetState(fsm.Fsm, stateName);
+
+    #region AddState
+
+    /// <summary>
+    /// Tries to add a state to the fsm with a single custom action.
+    /// </summary>
+    public static void AddState(this PlayMakerFSM fsm, string stateName, Action action, params FsmTransitionData[] transitionData)
+        => fsm.Fsm.AddState(stateName, action, transitionData);
+
+    /// <summary>
+    /// Tries to add a state to the fsm.
+    /// </summary>
+    public static void AddState(this PlayMakerFSM fsm, string stateName, IEnumerable<Action> actions, params FsmTransitionData[] transitionData)
+        => fsm.Fsm.AddState(stateName, actions, transitionData);
+
+    /// <summary>
+    /// Tries to add a state to the fsm with a set of state actions.
+    /// </summary>
+    public static void AddState(this PlayMakerFSM fsm, string stateName, IEnumerable<FsmStateAction> actions, params FsmTransitionData[] transitionData)
+        => fsm.Fsm.AddState(stateName, actions, transitionData);
+
+    /// <summary>
+    /// Tries to add a state to the fsm.
+    /// </summary>
+    public static void AddState(this PlayMakerFSM fsm, FsmState state, params FsmTransitionData[] transitionData) => fsm.Fsm.AddState(state, transitionData);
+
+    #endregion
+
+    /// <summary>
+    /// Adds a new event to the fsm. If the event already exist, this will do nothing.
+    /// </summary>
+    public static void AddEvent(this PlayMakerFSM fsm, string eventName) => fsm.Fsm.AddEvent(eventName);
+    
+    #endregion
+
+    #region Fsm
+
+    /// <summary>
+    /// Gets a state present in a fsm or <see langword="null"/> if it doesn't exist.
+    /// </summary>
+    public static FsmState GetState(this Fsm fsm, string stateName)
+    {
+        if (string.IsNullOrEmpty(stateName))
+            throw new ArgumentNullException(nameof(stateName));
+        return fsm.States.FirstOrDefault(x => x.Name == stateName);
+    }
+
+    #region AddState
+
+    /// <summary>
+    /// Tries to add a state to the fsm with a single custom action.
+    /// </summary>
+    public static void AddState(this Fsm fsm, string stateName, Action action, params FsmTransitionData[] transitionData)
+    {
+        // Validation
+        if (string.IsNullOrEmpty(stateName))
+            throw new ArgumentNullException(nameof(stateName));
+        if (action == null)
+            throw new ArgumentNullException(nameof(action));
+        if (transitionData == null)
+            throw new ArgumentNullException(nameof(transitionData));
+
+        if (fsm.States.Any(x => x.Name == stateName))
+            return;
+
+        try
+        {
+            FsmState state = new(fsm)
+            {
+                Name = stateName,
+                Actions = new FsmStateAction[]
+                {
+                    new GenericFsmStateAction() { ToExecute = action }
+                }
+            };
+            fsm.AddState(state, transitionData);
+        }
+        catch (Exception exception)
+        {
+            LogHelper.Write<KorzUtils>("Failed to add state " + stateName + " to fsm " + fsm.Name + ". Exception: " + exception.ToString());
+        }
+    }
+
+    /// <summary>
+    /// Tries to add a state to the fsm.
+    /// </summary>
+    public static void AddState(this Fsm fsm, string stateName, IEnumerable<Action> actions, params FsmTransitionData[] transitionData)
+    {
+        // Validation
+        if (string.IsNullOrEmpty(stateName))
+            throw new ArgumentNullException(nameof(stateName));
+        if (actions == null)
+            throw new ArgumentNullException(nameof(actions));
+        if (transitionData == null)
+            throw new ArgumentNullException(nameof(transitionData));
+        if (fsm.States.Any(x => x.Name == stateName))
+            return;
+
+        try
+        {
+            FsmState state = new(fsm)
+            {
+                Name = stateName,
+                Actions = actions.Select(x => new GenericFsmStateAction() { ToExecute = x }).ToArray()
+            };
+            fsm.AddState(state, transitionData);
+        }
+        catch (Exception exception)
+        {
+            LogHelper.Write<KorzUtils>("Failed to add state " + stateName + " to fsm " + fsm.Name + ". Exception: " + exception.ToString());
+        }
+    }
+
+    /// <summary>
+    /// Tries to add a state to the fsm with a set of state actions.
+    /// </summary>
+    public static void AddState(this Fsm fsm, string stateName, IEnumerable<FsmStateAction> actions, params FsmTransitionData[] transitionData)
+    {
+        // Validation
+        if (string.IsNullOrEmpty(stateName))
+            throw new ArgumentNullException(nameof(stateName));
+        if (actions == null)
+            throw new ArgumentNullException(nameof(actions));
+        if (transitionData == null)
+            throw new ArgumentNullException(nameof(transitionData));
+        if (fsm.States.Any(x => x.Name == stateName))
+            return;
+
+        try
+        {
+            FsmState state = new(fsm)
+            {
+                Name = stateName,
+                Actions = actions.ToArray()
+            };
+            fsm.AddState(state, transitionData);
+        }
+        catch (Exception exception)
+        {
+            LogHelper.Write<KorzUtils>("Failed to add state " + stateName + " to fsm " + fsm.Name + ". Exception: " + exception.ToString());
+        }
+    }
+
+    /// <summary>
+    /// Tries to add a state to the fsm.
+    /// </summary>
+    public static void AddState(this Fsm fsm, FsmState state, params FsmTransitionData[] transitionData)
+    {
+        // Validation
+        if (state == null)
+            throw new ArgumentNullException(nameof(state)); 
+        if (transitionData == null)
+            throw new ArgumentNullException($"{nameof(transitionData)}");
+        if (fsm.States.Any(x => x.Name == state.Name))
+            return;
+
+        try
+        {
+            FsmState[] newStates = new FsmState[fsm.States.Length + 1];
+            fsm.States.CopyTo(newStates, 0);
+            newStates[fsm.States.Length] = state;
+            fsm.States = newStates;
+
+            foreach (FsmTransitionData transition in transitionData)
+            {
+                // Since this will do nothing, if the event already exist. We can call it safely.
+                fsm.AddEvent(transition.EventName);
+                state.AddTransition(transition.EventName, transition.TargetState);
+            }
+        }
+        catch (Exception exception)
+        {
+            LogHelper.Write<KorzUtils>("Failed to add state " + state.Name + " to fsm " + fsm.Name + ". Exception: " + exception.ToString());
+        }
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Adds a new event to the fsm. If the event already exist, this will do nothing.
+    /// </summary>
+    public static void AddEvent(this Fsm fsm, string eventName)
+    {
+        if (string.IsNullOrEmpty(eventName))
+            throw new ArgumentNullException(nameof(eventName));
+        if (fsm.Events.Any(x => x.Name == eventName))
+            return;
+        FsmEvent[] newEvents = new FsmEvent[fsm.Events.Length + 1];
+        fsm.Events.CopyTo(newEvents, 0);
+        newEvents[fsm.Events.Length] = new FsmEvent(eventName);
+        fsm.Events = newEvents;
+    } 
+
+    #endregion
 }

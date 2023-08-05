@@ -10,6 +10,46 @@ namespace KorzUtils.Helper;
 public static class LogHelper
 {
     /// <summary>
+    /// Writes a quick message in the modlog.
+    /// </summary>
+    /// <param name="message">The message that should be written.</param>
+    /// <param name="logType">The type of log message</param>
+    /// <param name="includeScene">If <see langword="true"/>, the current scene is prepended.</param>
+    public static void Write(string message, LogType logType = LogType.Normal, bool includeScene = true)
+    {
+        if (includeScene)
+            message = $"(In scene: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}) " + message;
+        switch (logType)
+        {
+            case LogType.Normal:
+                KorzUtils.Instance.Log(message);
+                break;
+            case LogType.Warning:
+                KorzUtils.Instance.LogWarn(message);
+                break;
+            case LogType.Error:
+                KorzUtils.Instance.LogError(message);
+                break;
+            case LogType.Debug:
+                KorzUtils.Instance.LogDebug(message);
+                break;
+            default:
+                KorzUtils.Instance.LogFine(message);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Writes a quick message with an exception in the modlog.
+    /// </summary>
+    /// <param name="message">The message that should be written.</param>
+    /// <param name="exception">The exception to log</param>
+    /// <param name="includeScene">If <see langword="true"/>, the current scene is prepended.</param>
+    public static void Write(string message, Exception exception, bool includeScene = true) 
+        => Write(message + exception.ToString(), LogType.Error, includeScene);
+    
+
+    /// <summary>
     /// Creates a log entry in the modlog.
     /// </summary>
     /// <typeparam name="T">The mod which name should be included in the log.</typeparam>

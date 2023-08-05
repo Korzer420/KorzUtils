@@ -1,6 +1,9 @@
-namespace KorzUtils;
+namespace KorzUtils.Data;
 
-internal static class InternalExtensions
+/// <summary>
+/// Provides extensions for objects of this library.
+/// </summary>
+public static class InternalExtensions
 {
     internal static bool Match(this string callValue, string comparision, bool caseSensitive = false)
     {
@@ -21,4 +24,26 @@ internal static class InternalExtensions
         else
             return string.Equals(callValue, comparision);
     }
+
+    #region FsmTransitionData
+
+    /// <summary>
+    /// Extends the <see cref="FsmTransitionData"/> with a target state.
+    /// </summary>
+    public static FsmTransitionData WithTargetState(this FsmTransitionData transitionData, string targetState)
+    {
+        transitionData.TargetState = targetState;
+        return transitionData;
+    }
+
+    /// <summary>
+    /// Extends the <see cref="FsmTransitionData"/> with an event name.
+    /// </summary>
+    public static FsmTransitionData WithEventName(this FsmTransitionData transitionData, string eventName)
+    {
+        transitionData.EventName = eventName;
+        return transitionData;
+    }
+
+    #endregion
 }

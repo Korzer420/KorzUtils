@@ -70,7 +70,6 @@ public static class CharmHelper
     /// <param name="charm">The charm which should be checked.</param>
     /// <param name="forceLevel">If <see langword="true"/> multiple stage charms (like Grimmchild) are only considered if the player has the exact level. Otherwise higher stages are also return true.
     /// <para>Only works on vanilla charms</para></param>
-    /// <returns></returns>
     public static bool HasCharm(CharmRef charm, bool forceLevel = false)
     => charm switch
     {
