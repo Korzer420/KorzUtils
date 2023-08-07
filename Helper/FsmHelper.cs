@@ -1,16 +1,16 @@
 using HutongGames.PlayMaker;
 using HutongGames.PlayMaker.Actions;
-using ItemChanger.Extensions;
 using KorzUtils.Data;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
+using UnityEngine;
 
 namespace KorzUtils.Helper;
 
 /// <summary>
-/// Provides function for fsm.
+/// Provides function and extensions for fsm.
 /// </summary>
 public static class FsmHelper
 {
@@ -34,6 +34,12 @@ public static class FsmHelper
         return true;
     }
 
+    /// <summary>
+    /// Wraps an action so it can be used as a fsm state action.
+    /// </summary>
+    public static FsmStateAction WrapAction(Action action)
+        => new GenericFsmStateAction() { ToExecute = action };
+
     #endregion
 
     #region FsmState
@@ -42,7 +48,7 @@ public static class FsmHelper
 
     public static FsmStateAction GetFirstAction(this FsmState state) => state.Actions?.FirstOrDefault();
 
-    public static T GetFirstAction<T>(this FsmState state) where T : FsmStateAction 
+    public static T GetFirstAction<T>(this FsmState state) where T : FsmStateAction
         => state.Actions.FirstOrDefault(x => x is T) as T;
 
     public static FsmStateAction GetLastAction(this FsmState state) => state.Actions?.LastOrDefault();
@@ -52,7 +58,7 @@ public static class FsmHelper
 
     public static FsmStateAction[] GetActions(this FsmState state) => state.Actions;
 
-    public static T[] GetActions<T>(this FsmState state) where T: FsmStateAction => state.Actions?.Where(x => x is T)?
+    public static T[] GetActions<T>(this FsmState state) where T : FsmStateAction => state.Actions?.Where(x => x is T)?
         .Select(x => x as T)?
         .ToArray();
 
@@ -139,6 +145,23 @@ public static class FsmHelper
         => state.RemoveActions<T>(state.GetActions<T>().Length - 1);
 
     /// <summary>
+    /// Removes all actions at the passed indexes.
+    /// </summary>
+    /// <param name="indexToRemove">The indexes of the actions that should be removed.</param>
+    public static void RemoveActions(this FsmState state, params int[] indexToRemove)
+    {
+        if (indexToRemove?.Any() != true)
+            return;
+        List<FsmStateAction> remainingActions = new();
+
+        for (int actionIndex = 0; actionIndex < state.Actions.Length; actionIndex++)
+            if (!indexToRemove.Contains(actionIndex))
+                remainingActions.Add(state.Actions[actionIndex]);
+
+        state.Actions = remainingActions.ToArray();
+    }
+
+    /// <summary>
     /// Removes all appearances of an action that appear in the passed list.
     /// </summary>
     /// <typeparam name="T">The type of actions that should be removed.</typeparam>
@@ -166,6 +189,105 @@ public static class FsmHelper
 
     #endregion
 
+    #region InsertActions
+
+    /// <summary>
+    /// Inserts the actions after the given index.
+    /// <para>It is recommended to either create your own state that copies the needed actions 
+    /// or just hook the actions via On.HutongGames.PlayMaker.Actions.*YourActionType*.OnEnter instead!</para>
+    /// </summary>
+    public static void InsertActions(this FsmState state, int startIndex, params Action[] actions)
+    {
+        if (!actions.Any())
+            return;
+        startIndex = Math.Max(0, startIndex);
+
+        FsmStateAction[] currentActions = state.Actions;
+        IEnumerable<FsmStateAction> wrappedActions = actions.Select(x => new GenericFsmStateAction() { ToExecute = x });
+        if (startIndex >= currentActions.Length)
+        {
+            state.AddActions(wrappedActions);
+            return;
+        }
+        FsmStateAction[] newActions = state.Actions.Take(startIndex)
+            .Concat(wrappedActions)
+            .Concat(state.Actions.Skip(startIndex))
+            .ToArray();
+        state.Actions = newActions;
+    }
+
+    /// <summary>
+    /// Inserts the actions after the given index.
+    /// <para>It is recommended to either create your own state that copies the needed actions 
+    /// or just hook the actions via On.HutongGames.PlayMaker.Actions.*YourActionType*.OnEnter instead!</para>
+    /// </summary>
+    public static void InsertActions(this FsmState state, int startIndex, IEnumerable<Action> actions)
+        => state.InsertActions(startIndex, actions?.ToArray());
+
+    /// <summary>
+    /// Inserts the actions after the given index.
+    /// <para>It is recommended to either create your own state that copies the needed actions 
+    /// or just hook the actions via On.HutongGames.PlayMaker.Actions.*YourActionType*.OnEnter instead!</para>
+    /// </summary>
+    public static void InsertActions(this FsmState state, int startIndex, params FsmStateAction[] actions)
+    {
+        if (!actions.Any())
+            return;
+        if (startIndex < 0)
+            return;
+
+        FsmStateAction[] currentActions = state.Actions;
+        if (startIndex >= currentActions.Length)
+        {
+            state.AddActions(actions);
+            return;
+        }
+        FsmStateAction[] newActions = state.Actions.Take(startIndex)
+            .Concat(actions)
+            .Concat(state.Actions.Skip(startIndex))
+            .ToArray();
+        state.Actions = newActions;
+    }
+
+    /// <summary>
+    /// Inserts the actions after the given index.
+    /// <para>It is recommended to either create your own state that copies the needed actions 
+    /// or just hook the actions via On.HutongGames.PlayMaker.Actions.*YourActionType*.OnEnter instead!</para>
+    /// </summary>
+    public static void InsertActions(this FsmState state, int startIndex, IEnumerable<FsmStateAction> actions)
+        => state.InsertActions(startIndex, actions?.ToArray());
+
+    #endregion
+
+    #region ReplaceActions
+
+    /// <summary>
+    /// Replaces the action at the index position with a wrapped action.
+    /// </summary>
+    /// <param name="index">The index at which the action should be inserted and the original deleted.</param>
+    /// <param name="action">The action that should be wrapped for a state action.</param>
+    public static void ReplaceAction(this FsmState state, int index, Action action)
+        => state.ReplaceAction(index, new GenericFsmStateAction() { ToExecute = action });
+
+    /// <summary>
+    /// Replaces the action at the index position.
+    /// </summary>
+    /// <param name="index">The index at which the action should be inserted and the original deleted.</param>
+    /// <param name="action">Thee action that should replace the original one.</param>
+    public static void ReplaceAction(this FsmState state, int index, FsmStateAction action)
+    {
+        List<FsmStateAction> stateActions = state.Actions.ToList();
+        if (index >= stateActions.Count)
+        {
+            state.AddActions(action);
+            return;
+        }
+        stateActions.Insert(index, action);
+        state.Actions = stateActions.ToArray();
+    }
+
+    #endregion
+
     #region Transition
 
     /// <summary>
@@ -186,11 +308,11 @@ public static class FsmHelper
             state.AdjustTransition(eventName, targetStateName);
             return;
         }
-
-        state.Fsm.AddEvent(eventName);
+        
         FsmTransition fsmTransition = new()
         {
-            FsmEvent = state.Fsm.Events.FirstOrDefault(x => x.Name == eventName),
+            // This will automatically create the event if it does not already exist
+            FsmEvent = FsmEvent.GetFsmEvent(eventName),
             ToState = targetStateName,
             ToFsmState = targetState
         };
@@ -199,6 +321,30 @@ public static class FsmHelper
         transitions[transitions.Length - 1] = fsmTransition;
         state.Transitions = transitions;
     }
+
+    /// <summary>
+    /// Removes all transitions corresponding to the passed events.
+    /// </summary>
+    /// <param name="eventNames">The events/transitions to remove.</param>
+    public static void RemoveTransitions(this FsmState state, params string[] eventNames)
+        => state.Transitions = state.Transitions.Where(x => eventNames.Contains(x.EventName)).ToArray();
+
+    /// <summary>
+    /// Removes all matching transition by their name and event.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="transitionData"></param>
+    public static void RemoveTransitions(this FsmState state, params FsmTransitionData[] transitionData)
+    {
+        List<FsmTransition> fsmTransitions = new();
+        foreach (FsmTransition transition in state.Transitions)
+            if (!transitionData.Any(x => x == transition))
+                fsmTransitions.Add(transition);
+        state.Transitions = fsmTransitions.ToArray();
+    }
+
+    public static void RemoveTransitionsTo(this FsmState state, params string[] targetStates)
+        => state.Transitions = state.Transitions.Where(x => targetStates.Contains(x.ToState)).ToArray();
 
     /// <summary>
     /// Move a transition from one state to another.
@@ -248,7 +394,13 @@ public static class FsmHelper
     /// Remove all transitions from a state.
     /// </summary>
     public static void ClearTransitions(this FsmState state) => state.Transitions = Array.Empty<FsmTransition>();
-    
+
+    /// <summary>
+    /// Gets all transitions that START at this state.
+    /// </summary>
+    public static List<FsmTransitionData> GetTransitions(this FsmState state)
+        => state.Transitions.Select(x => new FsmTransitionData() { EventName = x.EventName, TargetState = x.ToState }).ToList();
+
     #endregion
 
     #endregion
@@ -291,7 +443,74 @@ public static class FsmHelper
     /// Adds a new event to the fsm. If the event already exist, this will do nothing.
     /// </summary>
     public static void AddEvent(this PlayMakerFSM fsm, string eventName) => fsm.Fsm.AddEvent(eventName);
-    
+
+    /// <summary>
+    /// Adds a variable to the fsm.
+    /// </summary>
+    /// <param name="variableName">The name the variable should have.</param>
+    /// <param name="value">The value the variable should have.</param>
+    public static void AddVariable<T>(this PlayMakerFSM fsm, string variableName, T value)
+    {
+        if (value is string stringValue)
+        {
+            List<FsmString> fsmStrings = fsm.FsmVariables.StringVariables.ToList();
+            if (fsmStrings.Any(x => x.Name == variableName))
+                return;
+            fsmStrings.Add(new() { Name = variableName, Value = stringValue });
+            fsm.FsmVariables.StringVariables = fsmStrings.ToArray();
+        }
+        else if (value is int intValue)
+        {
+            List<FsmInt> fsmInts = fsm.FsmVariables.IntVariables.ToList();
+            if (fsmInts.Any(x => x.Name == variableName))
+                return;
+            fsmInts.Add(new() { Name = variableName, Value = intValue });
+            fsm.FsmVariables.IntVariables = fsmInts.ToArray();
+        }
+        else if (value is float floatValue)
+        {
+            List<FsmFloat> fsmFloats = fsm.FsmVariables.FloatVariables.ToList();
+            if (fsmFloats.Any(x => x.Name == variableName))
+                return;
+            fsmFloats.Add(new() { Name = variableName, Value = floatValue });
+            fsm.FsmVariables.FloatVariables = fsmFloats.ToArray();
+        }
+        else if (value is bool boolValue)
+        {
+            List<FsmBool> fsmBools = fsm.FsmVariables.BoolVariables.ToList();
+            if (fsmBools.Any(x => x.Name == variableName))
+                return;
+            fsmBools.Add(new() { Name = variableName, Value = boolValue });
+            fsm.FsmVariables.BoolVariables = fsmBools.ToArray();
+        }
+        else if (value is Vector2 vector2Value)
+        {
+            List<FsmVector2> fsmVector2 = fsm.FsmVariables.Vector2Variables.ToList();
+            if (fsmVector2.Any(x => x.Name == variableName))
+                return;
+            fsmVector2.Add(new() { Name = variableName, Value = vector2Value });
+            fsm.FsmVariables.Vector2Variables = fsmVector2.ToArray();
+        }
+        else if (value is Vector3 vector3Value)
+        {
+            List<FsmVector3> fsmVector3 = fsm.FsmVariables.Vector3Variables.ToList();
+            if (fsmVector3.Any(x => x.Name == variableName))
+                return;
+            fsmVector3.Add(new() { Name = variableName, Value = vector3Value });
+            fsm.FsmVariables.Vector3Variables = fsmVector3.ToArray();
+        }
+        else if (value is GameObject gameObjectValue)
+        {
+            List<FsmGameObject> fsmGameObjects = fsm.FsmVariables.GameObjectVariables.ToList();
+            if (fsmGameObjects.Any(x => x.Name == variableName))
+                return;
+            fsmGameObjects.Add(new() { Name = variableName, Value = gameObjectValue });
+            fsm.FsmVariables.GameObjectVariables = fsmGameObjects.ToArray();
+        }
+        else
+            LogHelper.Write($"Unable to add fsm variable from type '{value.GetType().Name}'. If fsm do support this value, report this to the mod developer.", Enums.LogType.Error);
+    }
+
     #endregion
 
     #region Fsm
@@ -318,8 +537,6 @@ public static class FsmHelper
             throw new ArgumentNullException(nameof(stateName));
         if (action == null)
             throw new ArgumentNullException(nameof(action));
-        if (transitionData == null)
-            throw new ArgumentNullException(nameof(transitionData));
 
         if (fsm.States.Any(x => x.Name == stateName))
             return;
@@ -352,8 +569,7 @@ public static class FsmHelper
             throw new ArgumentNullException(nameof(stateName));
         if (actions == null)
             throw new ArgumentNullException(nameof(actions));
-        if (transitionData == null)
-            throw new ArgumentNullException(nameof(transitionData));
+
         if (fsm.States.Any(x => x.Name == stateName))
             return;
 
@@ -382,8 +598,6 @@ public static class FsmHelper
             throw new ArgumentNullException(nameof(stateName));
         if (actions == null)
             throw new ArgumentNullException(nameof(actions));
-        if (transitionData == null)
-            throw new ArgumentNullException(nameof(transitionData));
         if (fsm.States.Any(x => x.Name == stateName))
             return;
 
@@ -409,12 +623,11 @@ public static class FsmHelper
     {
         // Validation
         if (state == null)
-            throw new ArgumentNullException(nameof(state)); 
-        if (transitionData == null)
-            throw new ArgumentNullException($"{nameof(transitionData)}");
+            throw new ArgumentNullException(nameof(state));
         if (fsm.States.Any(x => x.Name == state.Name))
             return;
 
+        transitionData ??= Array.Empty<FsmTransitionData>();
         try
         {
             FsmState[] newStates = new FsmState[fsm.States.Length + 1];
@@ -444,13 +657,10 @@ public static class FsmHelper
     {
         if (string.IsNullOrEmpty(eventName))
             throw new ArgumentNullException(nameof(eventName));
-        if (fsm.Events.Any(x => x.Name == eventName))
+        if (eventName == "FINISHED")
             return;
-        FsmEvent[] newEvents = new FsmEvent[fsm.Events.Length + 1];
-        fsm.Events.CopyTo(newEvents, 0);
-        newEvents[fsm.Events.Length] = new FsmEvent(eventName);
-        fsm.Events = newEvents;
-    } 
+        FsmEvent.GetFsmEvent(eventName);
+    }
 
     #endregion
 }
