@@ -4,6 +4,8 @@ using Modding;
 using Modding.Delegates;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Linq;
 using UnityEngine;
 
 namespace KorzUtils.Helper;
@@ -13,31 +15,82 @@ namespace KorzUtils.Helper;
 /// </summary>
 public static class GameHelper
 {
+    #region Members
+
+    private static float _waitCounter = 0f;
+    private static Coroutine _queueRoutine;
+    private static ConcurrentQueue<string> _queuedMessages = new();
+
+    #endregion
+
     #region Methods
 
     /// <summary>
     /// Displays a message in the dream nail dialogue box used for enemy hits.
     /// </summary>
-    /// <param name="message"></param>
+    /// <param name="message">The message to display.</param>
     public static void DisplayMessage(string message)
     {
-        PlayMakerFSM playMakerFSM = PlayMakerFSM.FindFsmOnGameObject(FsmVariables.GlobalVariables.GetFsmGameObject("Enemy Dream Msg").Value, "Display");
-        playMakerFSM.FsmVariables.GetFsmInt("Convo Amount").Value = 1;
-        playMakerFSM.FsmVariables.GetFsmString("Convo Title").Value = "Korz_Util";
-
-        LanguageGetProxy languageGetProxy = null;
-        languageGetProxy = new((x, y, z) =>
+        if (HeroController.instance == null)
         {
-            if (x == "Korz_Util_1")
+            LogHelper.Write("No hero detected. Message '{0}' will be disposed.", Enums.LogType.Warning);
+            return;
+        }
+        _queuedMessages.Enqueue(message);
+        if (_queueRoutine == null)
+        {
+            if (GameManager.instance == null)
             {
-                ModHooks.LanguageGetHook -= languageGetProxy;
-                return message;
+                GameObject dummy = new("Dummy");
+                _queueRoutine = dummy.AddComponent<DummyComponent>().StartCoroutine(Queue(dummy));
             }
-            return z;
-        });
+            else
+                _queueRoutine = GameManager.instance.StartCoroutine(Queue());
+        }
+    }
 
-        ModHooks.LanguageGetHook += languageGetProxy;
-        playMakerFSM.SendEvent("DISPLAY ENEMY DREAM");
+    private static IEnumerator Queue(GameObject executingObject = null)
+    {
+        while (_queuedMessages.Any())
+        {
+            // Wait for the hero to accept inputs.
+            while (HeroController.instance?.acceptingInput != true)
+                yield return null;
+            try
+            {
+                PlayMakerFSM playMakerFSM = PlayMakerFSM.FindFsmOnGameObject(FsmVariables.GlobalVariables.GetFsmGameObject("Enemy Dream Msg").Value, "Display");
+                playMakerFSM.FsmVariables.GetFsmInt("Convo Amount").Value = 1;
+                playMakerFSM.FsmVariables.GetFsmString("Convo Title").Value = $"Korz_Util";
+                LanguageGetProxy languageGetProxy = null;
+                languageGetProxy = new((x, y, z) =>
+                {
+                    if (x == "Korz_Util_1")
+                    {
+                        ModHooks.LanguageGetHook -= languageGetProxy;
+                        _queuedMessages.TryDequeue(out string message);
+                        return message;
+                    }
+                    return z;
+                });
+                ModHooks.LanguageGetHook += languageGetProxy;
+                playMakerFSM.SendEvent("DISPLAY ENEMY DREAM");
+            }
+            catch (Exception exception)
+            {
+                LogHelper.Write($"Failed to display message.", exception);
+            }
+            // Delay messages so they don't override each other.
+            _waitCounter = 5f;
+            while(_waitCounter > 0f)
+            {
+                _waitCounter -= Time.deltaTime;
+                yield return null;
+            }
+        }
+        // If this coroutine was run on a dummy object destroy it afterwards.
+        if (executingObject != null)
+            GameObject.Destroy(executingObject);
+        _queueRoutine = null;
     }
 
     #endregion
