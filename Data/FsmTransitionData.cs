@@ -32,7 +32,7 @@ public class FsmTransitionData
 	/// <summary>
 	/// Creates new transition data from the target state.
 	/// </summary>
-	public static FsmTransitionData FromTargetState(string targetState) => new() { TargetState= targetState };
+	public static FsmTransitionData FromTargetState(string targetState) => new() { TargetState = targetState };
 
 	#endregion
 

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace KorzUtils.Helper;
 
 /// <summary>
-/// Stores various references from the HeroController.
+/// Stores various references from the HeroController for easier access.
 /// </summary>
 public static class HeroHelper
 {
@@ -83,6 +83,9 @@ public static class HeroHelper
     /// </summary>
     public static BoxCollider2D Collider => _collider == null && HeroController.instance != null ? _collider = HeroController.instance.GetComponent<BoxCollider2D>() : _collider;
 
+    /// <summary>
+    /// Gets all dream nail sprites.
+    /// </summary>
     public static tk2dSprite[] DreamNailSprites
     {
         get
@@ -93,6 +96,9 @@ public static class HeroHelper
         }
     }
 
+    /// <summary>
+    /// Gets the general knight sprite.
+    /// </summary>
     public static tk2dSprite Sprite => _sprite == null && HeroController.instance != null ? _sprite = HeroController.instance.GetComponent<tk2dSprite>() : _sprite;
 
     #endregion

@@ -32,6 +32,12 @@ public class GenericFsmStateAction : FsmStateAction
         }
         Finish();
     }
-    
+
+    #endregion
+
+    #region Operators
+
+    public static implicit operator GenericFsmStateAction(Action action) => new() { ToExecute = action };
+
     #endregion
 }

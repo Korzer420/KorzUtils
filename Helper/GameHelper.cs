@@ -49,6 +49,27 @@ public static class GameHelper
         }
     }
 
+    /// <summary>
+    /// Hooks the translation process to overwrite the matching key with the given message, but only once.
+    /// </summary>
+    /// <param name="key">The key which text should be overwritten.</param>
+    /// <param name="message">The text to send back to the game to display.</param>
+    /// <param name="sheet">The sheet that has to be matched (in addition to the key). If <see langword="null"/>, the sheet will be ignored in the comparison.</param>
+    public static void OneTimeMessage(string key, string message, string sheet = null)
+    {
+        LanguageGetProxy languageGetProxy = null;
+        languageGetProxy = new((x, y, z) =>
+        {
+            if (x == key && (string.IsNullOrEmpty(sheet) || y == sheet))
+            {
+                ModHooks.LanguageGetHook -= languageGetProxy;
+                return message;
+            }
+            return z;
+        });
+        ModHooks.LanguageGetHook += languageGetProxy;
+    }
+
     private static IEnumerator Queue(GameObject executingObject = null)
     {
         while (_queuedMessages.Any())

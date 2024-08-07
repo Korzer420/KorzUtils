@@ -178,9 +178,9 @@ public static class FsmHelper
         {
             if (currentAction is T)
             {
-                currentActionTypeIndex++;
                 if (indexToRemove.Contains(currentActionTypeIndex))
                     continue;
+                currentActionTypeIndex++;
             }
             remainingActions.Add(currentAction);
         }
@@ -327,13 +327,11 @@ public static class FsmHelper
     /// </summary>
     /// <param name="eventNames">The events/transitions to remove.</param>
     public static void RemoveTransitions(this FsmState state, params string[] eventNames)
-        => state.Transitions = state.Transitions.Where(x => eventNames.Contains(x.EventName)).ToArray();
+        => state.Transitions = state.Transitions.Where(x => !eventNames.Contains(x.EventName)).ToArray();
 
     /// <summary>
     /// Removes all matching transition by their name and event.
     /// </summary>
-    /// <param name="state"></param>
-    /// <param name="transitionData"></param>
     public static void RemoveTransitions(this FsmState state, params FsmTransitionData[] transitionData)
     {
         List<FsmTransition> fsmTransitions = new();
@@ -344,7 +342,7 @@ public static class FsmHelper
     }
 
     public static void RemoveTransitionsTo(this FsmState state, params string[] targetStates)
-        => state.Transitions = state.Transitions.Where(x => targetStates.Contains(x.ToState)).ToArray();
+        => state.Transitions = state.Transitions.Where(x => !targetStates.Contains(x.ToState)).ToArray();
 
     /// <summary>
     /// Move a transition from one state to another.

@@ -48,7 +48,6 @@ public static class LogHelper
     public static void Write(string message, Exception exception, bool includeScene = true) 
         => Write(message + exception.ToString(), LogType.Error, includeScene);
     
-
     /// <summary>
     /// Creates a log entry in the modlog.
     /// </summary>
@@ -91,5 +90,4 @@ public static class LogHelper
     /// <param name="includeScene">If <see langword="true"/>, the current scene is prepended.</param>
     public static void Write<T>(string message, Exception error, bool includeScene = true) where T : Mod
      => Write<T>(message + error.ToString(), LogType.Error, includeScene);
-
 }
