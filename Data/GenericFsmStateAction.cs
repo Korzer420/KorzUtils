@@ -1,6 +1,7 @@
 ﻿using HutongGames.PlayMaker;
 using KorzUtils.Helper;
 using System;
+using System.Collections.Generic;
 
 namespace KorzUtils.Data;
 
@@ -9,12 +10,13 @@ namespace KorzUtils.Data;
 /// </summary>
 public class GenericFsmStateAction : FsmStateAction
 {
-	#region Properties
+    public GenericFsmStateAction() { }
 
-    /// <summary>
-    /// Gets or sets the action that should be executed upon entering the state action.
-    /// </summary>
-	public Action ToExecute { get; set; }
+    public GenericFsmStateAction(Action action) => ToExecute = action;
+
+    #region Properties
+
+    public Action ToExecute { get; set; }
 
     #endregion
 

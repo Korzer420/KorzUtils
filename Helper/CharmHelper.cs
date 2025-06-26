@@ -12,7 +12,7 @@ public static class CharmHelper
 {
     #region Members
 
-    private static Dictionary<string, int> _customCharmList = new();
+    private static readonly Dictionary<string, int> _customCharmList = [];
 
     #endregion
 
@@ -142,7 +142,7 @@ public static class CharmHelper
         if (!Enum.TryParse(charmName, out CharmRef charm))
             return _customCharmList.ContainsKey(charmName) && PlayerData.instance.GetBool("equippedCharm_" + _customCharmList[charmName]);
         return EquippedCharm(charm, forceLevel);
-    } 
+    }
 
     #endregion
 
@@ -150,6 +150,19 @@ public static class CharmHelper
 
     /// <summary>
     /// Equips the given charm and forces a charm update. (May not update the UI if overcharmed in the process)
+    /// <para/>If the charm has not been obtained yet, it will be unlocked.
+    /// </summary>
+    /// <param name="charm">The charm to equip.</param>
+    public static void EnsureEquipCharm(CharmRef charm)
+    {
+        if (!HasCharm(charm, true))
+            UnlockCharm(charm);
+        EquipCharm(charm);
+    }
+
+    /// <summary>
+    /// Equips the given charm and forces a charm update. (May not update the UI if overcharmed in the process)
+    /// <para/>Does nothing if the charm has not been obtained yet.
     /// </summary>
     /// <param name="charm">The charm to equip.</param>
     /// <param name="toggle">If the charm is already equipped, setting this to true will unequip the charm instead.</param>
@@ -158,11 +171,17 @@ public static class CharmHelper
         charm = Normalize(charm);
 
         if (!HasCharm(charm, false))
+        {
+            LogHelper.Write("Charm has not been obtained. CharmRef: " + charm, LogType.Warning);
             return;
+        }
         if (EquippedCharm(charm, false))
         {
             if (!toggle)
+            {
+                LogHelper.Write("Charm already equipped. CharmRef: " + charm, LogType.Warning);
                 return;
+            }
             PlayerData.instance.GetVariable<List<int>>(nameof(PlayerData.instance.equippedCharms)).Remove((int)charm);
             PlayerData.instance.SetBool($"equippedCharm_{(int)charm}", false);
         }
@@ -173,10 +192,13 @@ public static class CharmHelper
         }
 
         HeroController.instance.CharmUpdate();
+        PlayMakerFSM.BroadcastEvent("CHARM INDICATOR CHECK");
+        PlayMakerFSM.BroadcastEvent("CHARM EQUIP CHECK");
     }
 
     /// <summary>
     /// Equips the given charm and forces a charm update. (May not update the UI if overcharmed in the process)
+    /// <para/>Does nothing if the charm has not been obtained yet.
     /// </summary>
     /// <param name="charmName">The name of the charm to equip.</param>
     /// <param name="toggle">If the charm is already equipped, setting this to true will unequip the charm instead.</param>
@@ -191,7 +213,10 @@ public static class CharmHelper
                 if (PlayerData.instance.GetBool($"equippedCharm_{_customCharmList[charmName]}"))
                 {
                     if (!toggle)
+                    {
+                        LogHelper.Write("Charm already equipped. CharmRef: " + charmName, LogType.Warning);
                         return;
+                    }
                     PlayerData.instance.GetVariable<List<int>>(nameof(PlayerData.instance.equippedCharms)).Remove(_customCharmList[charmName]);
                     PlayerData.instance.SetBool($"equippedCharm_{_customCharmList[charmName]}", false);
                 }
@@ -267,7 +292,7 @@ public static class CharmHelper
         {
             LogHelper.Write<KorzUtils>("Tried fetching the cost of unknown charm: " + charmName, LogType.Error);
             return -1;
-        }    
+        }
     }
 
     /// <summary>
@@ -275,8 +300,8 @@ public static class CharmHelper
     /// </summary>
     /// <param name="charm">The charm which cost should be set.</param>
     /// <param name="cost">The cost the charm should have.</param>
-    public static void SetCharmCost(CharmRef charm, int cost) 
-    { 
+    public static void SetCharmCost(CharmRef charm, int cost)
+    {
         PlayerData.instance.SetInt($"charmCost_{(int)Normalize(charm)}", cost);
         HeroController.instance.CharmUpdate();
     }
@@ -301,6 +326,98 @@ public static class CharmHelper
 
     #endregion
 
+    #region Unlock
+
+    /// <summary>
+    /// Unlocks the charm.
+    /// </summary>
+    public static void UnlockCharm(CharmRef charm,
+        bool toggle = false)
+    {
+        PDHelper.HasCharm = true;
+        CharmRef normalizedCharm = Normalize(charm);
+        if (HasCharm(charm, true))
+        {
+            if (!toggle)
+            {
+                LogHelper.Write("Charm is already unlocked. CharmRef: " + charm, LogType.Warning, false);
+                return;
+            }
+            if (EquippedCharm(charm))
+                UnequipCharm(charm);
+            PlayerData.instance.SetBool($"gotCharm_{(int)normalizedCharm}", false);
+            if (normalizedCharm == CharmRef.Grimmchild1)
+                PDHelper.GrimmChildLevel = 0;
+            else if (normalizedCharm == CharmRef.Kingssoul)
+                PDHelper.RoyalCharmState = 0;
+        }
+        else
+        {
+            PlayerData.instance.SetBool($"gotCharm_{(int)normalizedCharm}", true);
+            if (normalizedCharm == CharmRef.Grimmchild1)
+            {
+                PDHelper.GrimmChildLevel = charm switch
+                {
+                    CharmRef.Grimmchild1 => 1,
+                    CharmRef.Grimmchild2 => 2,
+                    CharmRef.Grimmchild3 => 3,
+                    CharmRef.Grimmchild4 => 4,
+                    _ => 5
+                };
+                // Needed to prevent grimm child from spawning
+                PDHelper.DestroyedNightmareLantern = charm == CharmRef.CarefreeMelody;
+            }
+            else if (charm == CharmRef.Kingssoul)
+                PDHelper.RoyalCharmState = 3;
+            else if (charm == CharmRef.VoidHeart)
+                PDHelper.GotShadeCharm = true;
+        }
+    }
+
+    /// <summary>
+    /// Locks the charm and unequips it (if equipped).
+    /// </summary>
+    public static void LockCharm(CharmRef charm,
+        bool toggle = false)
+    {
+        CharmRef normalizedCharm = Normalize(charm);
+        if (!HasCharm(charm))
+        {
+            if (!toggle)
+            {
+                LogHelper.Write("Charm is already locked. CharmRef: " + charm, LogType.Warning, false);
+                return;
+            }
+            PlayerData.instance.SetBool($"gotCharm_{(int)normalizedCharm}", true);
+            if (normalizedCharm == CharmRef.Grimmchild1)
+            {
+                PDHelper.GrimmChildLevel = charm switch
+                {
+                    CharmRef.Grimmchild1 => 1,
+                    CharmRef.Grimmchild2 => 2,
+                    CharmRef.Grimmchild3 => 3,
+                    CharmRef.Grimmchild4 => 4,
+                    _ => 5
+                };
+                // Needed to prevent grimm child from spawning
+                PDHelper.DestroyedNightmareLantern = charm == CharmRef.CarefreeMelody;
+            }
+            else if (charm == CharmRef.Kingssoul)
+                PDHelper.RoyalCharmState = 3;
+            else if (charm == CharmRef.VoidHeart)
+                PDHelper.GotShadeCharm = true;
+        }
+        else if (EquippedCharm(charm))
+            UnequipCharm(charm);
+        PlayerData.instance.SetBool($"gotCharm_{(int)normalizedCharm}", false);
+        if (normalizedCharm == CharmRef.Grimmchild1)
+            PDHelper.GrimmChildLevel = 0;
+        else if (normalizedCharm == CharmRef.Kingssoul)
+            PDHelper.RoyalCharmState = 0;
+    }
+
+    #endregion
+
     #region Private Methods
 
     /// <summary>
@@ -314,7 +431,7 @@ public static class CharmHelper
         CharmRef.UnbreakableHeart => CharmRef.FragileHeart,
         CharmRef.UnbreakableGreed => CharmRef.FragileGreed,
         CharmRef.UnbreakableStrength => CharmRef.FragileStrength,
-        CharmRef.Grimmchild2 or CharmRef.Grimmchild3 
+        CharmRef.Grimmchild2 or CharmRef.Grimmchild3
         or CharmRef.Grimmchild4 or CharmRef.CarefreeMelody => CharmRef.Grimmchild1,
         _ => charm
     };
