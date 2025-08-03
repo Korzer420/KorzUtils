@@ -56,7 +56,7 @@ public static class SpriteHelper
     /// <para/>For the sake of simplicity the path always start in mod directory (set by parameter T)
     /// </summary>
     /// <typeparam name="T">The mod which assembly location should be used as the base path.</typeparam>
-    /// <param name="spritePath">The relative path to the sprite. Format is [Location of assembly T]/[<paramref name="spritePath"/>]</param>
+    /// <param name="spritePath">The relative path to the sprite. Format is [Location of assembly of T]/[<paramref name="spritePath"/>]</param>
     /// <param name="cacheSprite">If true, if the sprite is already cached, the cached one is taken (if it does not exist, the new one will be cached) instead.</param>
     public static Sprite CreateFromDisk<T>(string spritePath,
         bool cacheSprite = true) where T : Mod
